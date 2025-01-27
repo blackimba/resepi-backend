@@ -7,7 +7,7 @@ const getExample = async (req: Request, res: Response) => {
     res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error: ' +err });
   }
 }
 
