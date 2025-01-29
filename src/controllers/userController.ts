@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database';
 import { User } from '../model/user';
 
@@ -69,7 +68,6 @@ import { User } from '../model/user';
  */
 const createUser = async (req: Request, res: Response) => {
   const { username, password, email } = req.body;
-  const id = uuidv4();
   const result = await pool.query('INSERT INTO recipe.users ( username, passwordhash, email) VALUES ($1, $2, $3) RETURNING *', [ username, password, email]);
   res.status(201).json(result.rows[0]);
 }
