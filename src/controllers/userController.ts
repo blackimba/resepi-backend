@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
 import { User } from '../model/user';
+import { successResponse, errorResponse } from '../common/baseResponse';
 
 /**
  * @swagger
@@ -67,9 +68,13 @@ import { User } from '../model/user';
  *         description: Some server error
  */
 const createUser = async (req: Request, res: Response) => {
-  const { username, password, email } = req.body;
-  const result = await pool.query('INSERT INTO recipe.users ( username, passwordhash, email) VALUES ($1, $2, $3) RETURNING *', [ username, password, email]);
-  res.status(201).json(result.rows[0]);
+  try {
+    const { username, password, email } = req.body;
+    const result = await pool.query('INSERT INTO recipe.users ( username, passwordhash, email) VALUES ($1, $2, $3) RETURNING *', [username, password, email]);
+    res.status(201).json(successResponse(result.rows, 'User created successfully'));
+  } catch (error) {
+    res.status(500).json(errorResponse('Internal server error'));
+  }
 }
 
 /**
@@ -89,8 +94,12 @@ const createUser = async (req: Request, res: Response) => {
  *                 $ref: '#/components/schemas/User'
  */
 const getUsers = async (req: Request, res: Response) => {
-  const result = await pool.query('SELECT * FROM recipe.users WHERE isactive = true');
-  res.status(200).json(result.rows);
+  try {
+    const result = await pool.query('SELECT * FROM recipe.users WHERE isactive = true');
+    res.status(200).json(successResponse(result.rows, 'User retrieve successfully'));
+  } catch (error) {
+    res.status(500).json(errorResponse('Internal server error'));
+  }
 }
 
 /**
@@ -117,13 +126,17 @@ const getUsers = async (req: Request, res: Response) => {
  *         description: The user was not found
  */
 const getUserById = async (req: Request, res: Response): Promise<void> => {
-  const id = req.params.id;
-  const result = await pool.query('SELECT * FROM recipe.users WHERE id = $1 AND isactive = true', [id]);
-  if (result.rows.length === 0) {
-    res.status(404).json({ message: 'User not found' });
-    return;
+  try {
+    const id = req.params.id;
+    const result = await pool.query('SELECT * FROM recipe.users WHERE id = $1 AND isactive = true', [id]);
+    if (result.rows.length === 0) {
+      res.status(404).json(errorResponse('Invalid Id', 'User not found'));
+      return;
+    }
+    res.status(200).json(successResponse(result.rows, 'User retrieve successfully'));
+  } catch (error) {
+    res.status(500).json(errorResponse('Internal server error'));
   }
-  res.status(200).json(result.rows[0]);
 };
 
 /**
@@ -158,15 +171,19 @@ const getUserById = async (req: Request, res: Response): Promise<void> => {
  *         description: Some server error
  */
 const updateUser = async (req: Request, res: Response) => {
-  const id = req.params.id;
-  const { username, password, email, isActive } = req.body;
-  const updateUser: User = { id, username, password, email, isActive};
-  const result = await pool.query('UPDATE recipe.users SET username = $1, passwordhash = $2, email = $3, isactive = $4 WHERE id = $5 RETURNING *', [updateUser.username, updateUser.password, updateUser.email,updateUser.isActive, updateUser.id]);
-  if (result.rowCount === 0) {
-    res.status(404).json({ message: 'User not found' });
-    return;
+  try {
+    const id = req.params.id;
+    const { username, password, email, isActive } = req.body;
+    const updateUser: User = { id, username, password, email, isActive };
+    const result = await pool.query('UPDATE recipe.users SET username = $1, passwordhash = $2, email = $3, isactive = $4 WHERE id = $5 RETURNING *', [updateUser.username, updateUser.password, updateUser.email, updateUser.isActive, updateUser.id]);
+    if (result.rowCount === 0) {
+      res.status(404).json(errorResponse('Internal server error', 'User not found'));
+      return;
+    }
+    res.status(200).json(successResponse(result.rows, 'User updated successfully'));
+  } catch (error) {
+    res.status(500).json(errorResponse('Internal server error'));
   }
-  res.status(200).json(updateUser);
 }
 
 /**
@@ -189,13 +206,17 @@ const updateUser = async (req: Request, res: Response) => {
  *         description: The user was not found
  */
 const deleteUser = async (req: Request, res: Response) => {
-  const id = req.params;
-  const result = await pool.query('UPDATE recipe.users SET isactive = false WHERE id = $1 RETURNING *', [id]);
-  if (result.rowCount === 0) {
-    res.status(404).json({ message: 'User not found' });
-    return;
+  try {
+    const id = req.params;
+    const result = await pool.query('UPDATE recipe.users SET isactive = false WHERE id = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      res.status(404).json(errorResponse('Internal server', 'User not found'));
+      return;
+    }
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json(errorResponse('Internal server'));
   }
-  res.status(200).json({ message: 'User deleted successfully' });
 }
 
 export {
